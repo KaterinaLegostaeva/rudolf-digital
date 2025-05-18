@@ -1,5 +1,27 @@
 # -*- coding: UTF-8 -*-
 
+
+def is_allowed(msg: str):
+    stop_list = "\/@%&*^?!.,;:#№$~- ><+=)(`[]§"
+    for w in msg:
+        if w in stop_list or 0 <= ord(w) <= 31:
+            return False
+    return True
+
+
+def track_is_true(track_num: str):
+    length = 14
+    stop_list = "\/@%&*^?!.,;:#№$~- _><+=)(`[]§"
+    if len(track_num) != length:
+        return False
+
+    for w in track_num:
+        if w in stop_list or 0 <= ord(w) <= 31:
+            return False
+
+    return True
+
+
 # bot messages
 # start messages
 start_message = """Привет, я цифровой ассистент Рудольф!🎄\nДавай начнем знакомство! Я уже запомнил твой telegram,\
