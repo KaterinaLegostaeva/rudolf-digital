@@ -3,7 +3,7 @@ import os
 import logging
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 
 import config

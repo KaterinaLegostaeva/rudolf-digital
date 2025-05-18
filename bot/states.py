@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-from aiogram.fsm import StatesGroup, State
+from aiogram.dispatcher.filters.state import StatesGroup, State
 
 
 class Registration(StatesGroup):
