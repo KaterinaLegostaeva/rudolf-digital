@@ -12,9 +12,9 @@ import markups as nav
 from markups import Buttons as Bt
 from db import Database
 
+
 load_dotenv('./.env')
 token = os.getenv('TOKEN')
-
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_out = logging.StreamHandler()
@@ -22,7 +22,6 @@ file_log = logging.FileHandler("./logs/bot-info.log")
 file_log.setFormatter(formatter)
 console_out.setFormatter(formatter)
 logging.basicConfig(handlers=(file_log, console_out), level=logging.INFO)
-
 
 bot = Bot(token)
 storage = MemoryStorage()
