@@ -1,4 +1,16 @@
 # -*- coding: UTF-8 -*-
+
+"""Телеграм-бот для управления регистрацией пользователей и отслеживанием данных.
+
+Основные компоненты:
+    - Обработчики сообщений для команд /start, кнопок меню и состояний FSM
+    - Конечные автоматы (FSM): 
+        • Registration: процесс регистрации через VK ID
+        • Tracking: установка трек-номера
+    - Интеграция с БД SQLite через класс Database
+    - Система логирования в файл и консоль
+"""
+
 import os
 import logging
 from dotenv import load_dotenv
@@ -31,6 +43,15 @@ db = Database('./data/database.db')
 
 @dp.message_handler(commands=['start'])
 async def get_started(msg: types.Message):
+    """Обработчик команды /start.
+
+    Проверяет наличие пользователя в базе данных:
+    - Если пользователь новый — добавляет его и отправляет стартовое сообщение.
+    - Если пользователь уже существует — отправляет соответствующее сообщение.
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+    """
     if not db.user_exists(msg.from_user.id):
         db.add_user(msg.from_user.id)
         logging.info(config.new_user % msg.from_user.id)
@@ -41,12 +62,32 @@ async def get_started(msg: types.Message):
 
 @dp.message_handler(lambda message: message.text == Bt.REGISTRY)
 async def registration(msg: types.Message):
+    """ Обработчик кнопки регистрации.
+
+    Переводит пользователя в состояние регистрации (ввод VK ID),
+    отправляет сообщение с инструкцией и клавиатуру "Назад".
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+    """
     await bot.send_message(msg.from_user.id, config.registration_message, reply_markup=nav.back_menu)
     await Registration.vk_id.set()
 
 
 @dp.message_handler(state=Registration.vk_id)
 async def vk_id_processing(msg: types.Message, state: FSMContext):
+    """
+    Обработчик ввода VK ID в состоянии регистрации.
+
+    Проверяет корректность введённого VK ID:
+    - Если введён корректный VK ID — завершает регистрацию.
+    - Если введено "Назад" — возвращает в главное меню.
+    - Если введён некорректный VK ID — просит повторить ввод.
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+        state (FSMContext): Состояние конечного автомата (FSM).
+    """
     if msg.text != Bt.BACK:
         if db.get_signup(msg.from_user.id) == 'setvkid':
             if config.is_allowed(msg.text):
@@ -68,12 +109,33 @@ async def vk_id_processing(msg: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text == Bt.SET_TRACKER)
 async def set_track_number(msg: types.Message):
+    """
+    Обработчик кнопки установки трек-номера.
+
+    Переводит пользователя в состояние ввода трек-номера,
+    отправляет сообщение с инструкцией и клавиатуру "Назад".
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+    """
     await bot.send_message(msg.from_user.id, config.track_message, reply_markup=nav.back_menu)
     await Tracking.set_track_number.set()
 
 
 @dp.message_handler(state=Tracking.set_track_number)
 async def track_number_processing(msg: types.Message, state: FSMContext):
+    """
+    Обработчик ввода трек-номера в состоянии отслеживания.
+
+    Проверяет корректность введённого трек-номера:
+    - Если введён корректный трек-номер — сохраняет его.
+    - Если введено "Назад" — возвращает в главное меню.
+    - Если введён некорректный трек-номер — просит повторить ввод.
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+        state (FSMContext): Состояние конечного автомата (FSM).
+    """
     if msg.text != Bt.BACK:
         if db.get_signup(msg.from_user.id) != 'setvkid':
             if db.get_track_number(msg.from_user.id) == 'notimplemented':
@@ -98,12 +160,28 @@ async def track_number_processing(msg: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text == Bt.GET_HELP)
 async def get_help(msg: types.Message):
+    """Обработчик кнопки получения помощи.
+
+    Отправляет пользователю сообщение с инструкцией или справкой.
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+    """
     if msg.chat.type == 'private':
         await bot.send_message(msg.from_user.id, config.help_message)
 
 
 @dp.message_handler(lambda message: message.text == Bt.GET_TRACKER)
 async def get_tracker(msg: types.Message):
+    """Обработчик кнопки получения трек-номера.
+
+    Проверяет статус пользователя и наличие трек-номера:
+    - Если пользователь зарегистрирован и трек-номер есть — отправляет его.
+    - Если пользователь не зарегистрирован или трек-номер отсутствует — сообщает об этом.
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+    """
     if msg.chat.type == 'private':
         if db.get_signup(msg.from_user.id) != 'setvkid':
             vk = db.get_vk_id(msg.from_user.id)
@@ -127,6 +205,15 @@ async def get_tracker(msg: types.Message):
 
 @dp.message_handler(lambda message: message.text == Bt.GET_MESSAGE)
 async def get_message(msg: types.Message):
+    """Обработчик кнопки получения сообщения.
+
+    Проверяет статус пользователя и наличие данных:
+    - Если пользователь зарегистрирован и данные есть — отправляет сообщение.
+    - Если пользователь не зарегистрирован или данных нет — сообщает об этом.
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+    """
     if msg.chat.type == 'private':
         if db.get_signup(msg.from_user.id) != 'setvkid':
             vk = db.get_vk_id(msg.from_user.id)
@@ -155,6 +242,13 @@ async def get_message(msg: types.Message):
 
 @dp.message_handler()
 async def default_answer(msg: types.Message):
+    """Обработчик сообщений, не попавших под другие хэндлеры.
+
+    Отправляет пользователю стандартное сообщение.
+
+    Args:
+        msg (types.Message): Объект сообщения от пользователя.
+    """
     await bot.send_message(msg.from_user.id, config.default_message, reply_markup=nav.main_menu)
 
 
