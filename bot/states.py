@@ -14,9 +14,6 @@ class Registration(StatesGroup):
 
     Определяет состояния, через которые проходит пользователь при регистрации.
     В данном случае — состояние для ввода VK ID.
-    
-    Args:
-        StatesGroup (_type_): _description_
     """
     vk_id = State()
 
@@ -26,8 +23,5 @@ class Tracking(StatesGroup):
 
     Определяет состояния, через которые проходит пользователь при работе с трек-номером.
     В данном случае — состояние для ввода трек-номера.
-
-    Args:
-        StatesGroup (_type_): _description_
     """
     set_track_number = State()
